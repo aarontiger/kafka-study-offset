@@ -7,7 +7,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
-public class MyAutoCommitConsumer {
+public class KafkaAutoCommitConsumer {
 
     public static void main(String[] args) {
         Properties props = new Properties();

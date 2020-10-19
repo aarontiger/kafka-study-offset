@@ -10,7 +10,7 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 
-public class MyManualCommitConsumer {
+public class KafkaManualCommitConsumer {
 
     public static void main(String[] args) {
         Properties props = new Properties();
