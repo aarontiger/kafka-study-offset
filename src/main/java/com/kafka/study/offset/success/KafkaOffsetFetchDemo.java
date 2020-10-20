@@ -1,6 +1,10 @@
 package com.kafka.study.offset.success;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.kafka.study.offset.success.model.OffsetInfo;
+import com.kafka.study.offset.success.model.OffsetZkInfo;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.serialize.SerializableSerializer;
 import org.apache.kafka.clients.CommonClientConfigs;
@@ -20,12 +24,9 @@ public class KafkaOffsetFetchDemo {
     private final String BROKER_TOPICS_PATH = "/brokers/topics";
     private final String KAFKA_SERVER_URL ="192.168.66.121:9092";
     private final String ZOOKEEPER_SERVER_URL ="192.168.66.121:2181";
+    private final String KAFKA_EAGLE_SYSTEM_GROUP = "kafka.eagle.system.group";
 
-
-
-    OwnerFetcher ownerFetcher = new OwnerFetcher();
-
-
+    KafkaServiceImpl kafkaService = new KafkaServiceImpl();
 
     public static void main(String[] args){
         KafkaOffsetFetchDemo kafkaOffsetFetchDemo = new KafkaOffsetFetchDemo();
@@ -60,8 +61,8 @@ public class KafkaOffsetFetchDemo {
 
             System.out.println("partitionOffeset:"+partitionOffset);
 
-            Map<TopicPartition, Long> tps2 = ownerFetcher.getKafkaLogSize(KAFKA_SERVER_URL, topic, partitionids);
-            List<OffsetInfo> targets = new ArrayList<OffsetInfo>();
+            Map<TopicPartition, Long> tps2 = getKafkaLogSize(KAFKA_SERVER_URL, topic, partitionids);
+            List<OffsetInfo> resultOffsetList = new ArrayList<OffsetInfo>();
             if (tps != null && partitionOffset != null) {
                 for (Map.Entry<TopicPartition, Long> entrySet : tps2.entrySet()) {
                     OffsetInfo offsetInfo = new OffsetInfo();
@@ -71,12 +72,13 @@ public class KafkaOffsetFetchDemo {
                     offsetInfo.setLogSize(entrySet.getValue());
                     offsetInfo.setOffset(partitionOffset.get(partition));
                     offsetInfo.setLag(offsetInfo.getOffset() == -1 ? 0 : (offsetInfo.getLogSize() - offsetInfo.getOffset()));
-                    offsetInfo.setOwner(ownerFetcher.getKafkaOffsetOwner( group, topic, partition).getOwners());
+                    offsetInfo.setOwner(getKafkaOffsetOwner( group, topic, partition).getOwners());
                     offsetInfo.setPartition(partition);
-                    targets.add(offsetInfo);
+                    resultOffsetList.add(offsetInfo);
+                    System.out.println("offset item:"+offsetInfo);
                 }
             }
-            System.out.println("offset result:"+targets);
+            System.out.println("result offset list:"+resultOffsetList);
             //return targets;
 
 
@@ -100,7 +102,47 @@ public class KafkaOffsetFetchDemo {
         return partitionIds;
     }
 
+    public OffsetZkInfo getKafkaOffsetOwner(String group, String topic, int partition) {
+        OffsetZkInfo targetOffset = new OffsetZkInfo();
+        JSONArray consumerGroups = JSON.parseArray(kafkaService.getKafkaConsumerGroupTopic( group));
+        for (Object consumerObject : consumerGroups) {
+            JSONObject consumerGroup = (JSONObject) consumerObject;
+            for (Object topicSubObject : consumerGroup.getJSONArray("topicSub")) {
+                JSONObject topicSub = (JSONObject) topicSubObject;
+                if (topic.equals(topicSub.getString("topic")) && partition == topicSub.getInteger("partition")) {
+                    targetOffset.setOwners(consumerGroup.getString("node") + "-" + consumerGroup.getString("owner"));
+                }
+            }
+        }
+        return targetOffset;
+    }
 
+    public Map<TopicPartition, Long> getKafkaLogSize(String clusterAlias, String topic, Set<Integer> partitionids) {
+        Properties props = new Properties();
+        props.put(ConsumerConfig.GROUP_ID_CONFIG,KAFKA_EAGLE_SYSTEM_GROUP);
+        props.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, KAFKA_SERVER_URL);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getCanonicalName());
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getCanonicalName());
+       /* if (SystemConfigUtils.getBooleanProperty(clusterAlias + ".kafka.eagle.sasl.enable")) {
+            sasl(props, clusterAlias);
+        }
+        if (SystemConfigUtils.getBooleanProperty(clusterAlias + ".kafka.eagle.ssl.enable")) {
+            ssl(props, clusterAlias);
+        }*/
+        KafkaConsumer<String, String> consumer = new KafkaConsumer<>(props);
+        Set<TopicPartition> tps = new HashSet<>();
+        for (int partitionid : partitionids) {
+            TopicPartition tp = new TopicPartition(topic, partitionid);
+            tps.add(tp);
+        }
+
+        consumer.assign(tps);
+        java.util.Map<TopicPartition, Long> endLogSize = consumer.endOffsets(tps);
+        if (consumer != null) {
+            consumer.close();
+        }
+        return endLogSize;
+    }
 
 
     /*public static void main(String[] args) throws InstantiationException, IllegalAccessException {
