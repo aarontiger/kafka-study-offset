@@ -1,13 +1,17 @@
 package com.kafka.study.offset.success;
 
+import com.kafka.study.offset.success.model.OffsetInfo;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.serialize.SerializableSerializer;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsOptions;
 import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.serialization.StringDeserializer;
 
 import java.util.*;
 
@@ -16,6 +20,12 @@ public class KafkaOffsetFetchDemo {
     private final String BROKER_TOPICS_PATH = "/brokers/topics";
     private final String KAFKA_SERVER_URL ="192.168.66.121:9092";
     private final String ZOOKEEPER_SERVER_URL ="192.168.66.121:2181";
+
+
+
+    OwnerFetcher ownerFetcher = new OwnerFetcher();
+
+
 
     public static void main(String[] args){
         KafkaOffsetFetchDemo kafkaOffsetFetchDemo = new KafkaOffsetFetchDemo();
@@ -41,6 +51,7 @@ public class KafkaOffsetFetchDemo {
 
             ListConsumerGroupOffsetsResult offsets = adminClient.listConsumerGroupOffsets(group);
             Map<Integer, Long> partitionOffset = new HashMap<>();
+
             for (Map.Entry<TopicPartition, OffsetAndMetadata> entry : offsets.partitionsToOffsetAndMetadata().get().entrySet()) {
                 if (topic.equals(entry.getKey().topic())) {
                     partitionOffset.put(entry.getKey().partition(), entry.getValue().offset());
@@ -48,6 +59,25 @@ public class KafkaOffsetFetchDemo {
             }
 
             System.out.println("partitionOffeset:"+partitionOffset);
+
+            Map<TopicPartition, Long> tps2 = ownerFetcher.getKafkaLogSize(KAFKA_SERVER_URL, topic, partitionids);
+            List<OffsetInfo> targets = new ArrayList<OffsetInfo>();
+            if (tps != null && partitionOffset != null) {
+                for (Map.Entry<TopicPartition, Long> entrySet : tps2.entrySet()) {
+                    OffsetInfo offsetInfo = new OffsetInfo();
+                    int partition = entrySet.getKey().partition();
+                    offsetInfo.setCreate("2020-10-20");
+                    offsetInfo.setModify("2020-10-20");
+                    offsetInfo.setLogSize(entrySet.getValue());
+                    offsetInfo.setOffset(partitionOffset.get(partition));
+                    offsetInfo.setLag(offsetInfo.getOffset() == -1 ? 0 : (offsetInfo.getLogSize() - offsetInfo.getOffset()));
+                    offsetInfo.setOwner(ownerFetcher.getKafkaOffsetOwner( group, topic, partition).getOwners());
+                    offsetInfo.setPartition(partition);
+                    targets.add(offsetInfo);
+                }
+            }
+            System.out.println("offset result:"+targets);
+            //return targets;
 
 
         }catch (Exception e){
@@ -69,6 +99,9 @@ public class KafkaOffsetFetchDemo {
 
         return partitionIds;
     }
+
+
+
 
     /*public static void main(String[] args) throws InstantiationException, IllegalAccessException {
         Properties props = new Properties();
