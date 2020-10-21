@@ -1,4 +1,4 @@
-package com.kafka.study.offset;
+package com.kafka.study.offset.test.zkapi;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;

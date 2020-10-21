@@ -21,29 +21,43 @@ import java.util.*;
 
 public class KafkaServiceImpl {
 
-    private final String KAFKA_SERVER_URL ="192.168.90.5:9092";
+    private AdminClient adminClient;
 
-
-    private JSONArray getKafkaMetadata(String bootstrapServers, String group) {
+    public KafkaServiceImpl(){
         Properties prop = new Properties();
-        prop.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-
-      /*  if (SystemConfigUtils.getBooleanProperty(clusterAlias + ".kafka.eagle.sasl.enable")) {
-            sasl(prop, clusterAlias);
-        }
-        if (SystemConfigUtils.getBooleanProperty(clusterAlias + ".kafka.eagle.ssl.enable")) {
-            ssl(prop, clusterAlias);
-        }*/
+        prop.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, KafkaOffsetFetchDemo.KAFKA_SERVER_URL);
 
         prop.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
         prop.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
         prop.put("sasl.jaas.config",
                 "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" +
                         "admin\" password=\"admin\";");
+        adminClient = AdminClient.create(prop);
+    }
+
+
+    private JSONArray getKafkaMetadata(String bootstrapServers, String group) {
+     /*   Properties prop = new Properties();
+        prop.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+
+      *//*  if (SystemConfigUtils.getBooleanProperty(clusterAlias + ".kafka.eagle.sasl.enable")) {
+            sasl(prop, clusterAlias);
+        }
+        if (SystemConfigUtils.getBooleanProperty(clusterAlias + ".kafka.eagle.ssl.enable")) {
+            ssl(prop, clusterAlias);
+        }*//*
+
+        prop.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+        prop.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
+        prop.put("sasl.jaas.config",
+                "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" +
+                        "admin\" password=\"admin\";");
+
+        AdminClient adminClient = null;*/
+
         JSONArray consumerGroups = new JSONArray();
-        AdminClient adminClient = null;
         try {
-            adminClient = AdminClient.create(prop);
+            //adminClient = AdminClient.create(prop);
             DescribeConsumerGroupsResult descConsumerGroup = adminClient.describeConsumerGroups(Arrays.asList(group));
             Collection<MemberDescription> consumerMetaInfos = descConsumerGroup.describedGroups().get(group).get().members();
             Set<String> hasOwnerTopics = new HashSet<>();
@@ -90,7 +104,7 @@ public class KafkaServiceImpl {
     }
 
     public String getKafkaConsumerGroupTopic( String group) {
-        return getKafkaMetadata(KAFKA_SERVER_URL, group).toJSONString();
+        return getKafkaMetadata(KafkaOffsetFetchDemo.KAFKA_SERVER_URL, group).toJSONString();
     }
 
    /* private String parseBrokerServer(String clusterAlias) {

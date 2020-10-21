@@ -3,7 +3,7 @@ package com.kafka.study.offset.success;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.kafka.study.offset.MyZkWatcher;
+import com.kafka.study.offset.test.zkapi.MyZkWatcher;
 import com.kafka.study.offset.success.model.OffsetInfo;
 import com.kafka.study.offset.success.model.OffsetZkInfo;
 import org.I0Itec.zkclient.ZkClient;
@@ -42,30 +42,18 @@ public class KafkaOffsetFetchDemo {
     public final String KAFKA_TOPIC = "powerTopic";
     public final String KAFKA_GROUP = "lovelyGroup";*/
 
-    private final String KAFKA_SERVER_URL ="192.168.90.5:9092";
+    public static final String KAFKA_SERVER_URL ="192.168.90.5:9092";
     private final String ZOOKEEPER_SERVER_URL ="192.168.90.5:9081";
     public final String KAFKA_TOPIC = "bingoyes-face";
     public final String KAFKA_GROUP = "flink-graph-face4";
 
     KafkaServiceImpl kafkaService = new KafkaServiceImpl();
 
-    public static void main(String[] args){
-        KafkaOffsetFetchDemo kafkaOffsetFetchDemo = new KafkaOffsetFetchDemo();
-        kafkaOffsetFetchDemo.getKafkaOffSet(kafkaOffsetFetchDemo.KAFKA_TOPIC,kafkaOffsetFetchDemo.KAFKA_GROUP);
-        /*kafkaOffsetFetchDemo.testZkAuth();
-        try {
-            kafkaOffsetFetchDemo.connect();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }*/
-    }
+    AdminClient adminClient;
 
-    public void getKafkaOffSet(String topic,String group){
-        Set<Integer> partitionids = this.getTopicPartitions(topic);
+    public KafkaOffsetFetchDemo(){
 
-        AdminClient adminClient = null;
+
         Properties prop = new Properties();
         prop.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, KAFKA_SERVER_URL);
 
@@ -74,9 +62,29 @@ public class KafkaOffsetFetchDemo {
         prop.put("sasl.jaas.config",
                 "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" +
                         "admin\" password=\"admin\";");
+        adminClient = AdminClient.create(prop);
+    }
+
+    public static void main(String[] args){
+        KafkaOffsetFetchDemo kafkaOffsetFetchDemo = new KafkaOffsetFetchDemo();
+        kafkaOffsetFetchDemo.getKafkaOffSet(kafkaOffsetFetchDemo.KAFKA_TOPIC,kafkaOffsetFetchDemo.KAFKA_GROUP);
+    }
+
+    public void getKafkaOffSet(String topic,String group){
+        Set<Integer> partitionids = this.getTopicPartitions(topic);
+
+     /*   AdminClient adminClient = null;
+        Properties prop = new Properties();
+        prop.put(CommonClientConfigs.BOOTSTRAP_SERVERS_CONFIG, KAFKA_SERVER_URL);
+
+        prop.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+        prop.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
+        prop.put("sasl.jaas.config",
+                "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" +
+                        "admin\" password=\"admin\";");*/
 
         try {
-            adminClient = AdminClient.create(prop);
+            //adminClient = AdminClient.create(prop);
             List<TopicPartition> tps = new ArrayList<>();
             for (int partitionid : partitionids) {
                 TopicPartition tp = new TopicPartition(topic, partitionid);
@@ -123,6 +131,11 @@ public class KafkaOffsetFetchDemo {
         }
     }
 
+    /**
+     * 得到topic的分区信息
+     * @param topic
+     * @return
+     */
     public Set<Integer> getTopicPartitions(String topic){
         String ZKServers = ZOOKEEPER_SERVER_URL;
         ZkClient zkClient = new ZkClient(ZKServers,10000,60000,new SerializableSerializer());
@@ -138,64 +151,7 @@ public class KafkaOffsetFetchDemo {
         return partitionIds;
     }
 
-    private static final String allAuth = "super-admin:admin1";
-    private static final String digest = "digest";
-    private static final String testNode = "/dubbo";
-
-    public void testZkAuth(){
-        String ZKServers = ZOOKEEPER_SERVER_URL;
-        ZkClient zkClient = new ZkClient(ZKServers,10000,60000,new SerializableSerializer());
-        try {
-            System.out.println(DigestAuthenticationProvider.generateDigest(allAuth));
-            zkClient.addAuthInfo(digest, allAuth.getBytes());
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-
-
-        if (zkClient.exists(testNode)) {
-            zkClient.delete(testNode);
-            System.out.println("节点删除成功！");
-        }
-    }
-
-    public  ZooKeeper connect() throws IOException, InterruptedException{
-        CountDownLatch cdl = new CountDownLatch(1);
-//        log.info("准备建立zk服务");
-        ZooKeeper zk = new ZooKeeper(ZOOKEEPER_SERVER_URL, 100000,new MyZkWatcher(cdl,"建立连接"));
-//        log.info("完成建立zk服务");
-        cdl.await();//这里为了等待wather监听事件结束
-        //zk.addAuthInfo("digest", allAuth.getBytes());
-
-        try {
-            Stat stat = queryStat(zk, "/");
-            System.out.println("state:"+stat);
-        } catch (KeeperException e) {
-             e.printStackTrace();
-        }
-        List<ACL> acls = new ArrayList<>();
-        //scheme 有world/auth/digest/host/ip/
-        //zk的digest是通过sha1加密
-        String scheme = "auth";
-        //定义一个用户名密码为lry:123456
-        Id id = null;
-        try {
-            id = new Id(scheme, DigestAuthenticationProvider.generateDigest("admin:admin"));
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-        ACL acl = new ACL(ZooDefs.Perms.ALL, id);
-        acls.add(acl);
-        return zk;
-    }
-
-    public static Stat queryStat(ZooKeeper zk,String nodePath) throws KeeperException, InterruptedException{
-        //log.info("准备查询节点Stat，path：{}", nodePath);
-        Stat stat = zk.exists(nodePath, false);
-        //log.info("结束查询节点Stat，path：{}，version：{}", nodePath, stat.getVersion());
-        return stat;
-    }
-
+    //得到owner
     public OffsetZkInfo getKafkaOffsetOwner(String group, String topic, int partition) {
         OffsetZkInfo targetOffset = new OffsetZkInfo();
         JSONArray consumerGroups = JSON.parseArray(kafkaService.getKafkaConsumerGroupTopic( group));
@@ -211,6 +167,7 @@ public class KafkaOffsetFetchDemo {
         return targetOffset;
     }
 
+    //得到topic生产的最后位置
     public Map<TopicPartition, Long> getKafkaLogSize(String clusterAlias, String topic, Set<Integer> partitionids) {
         Properties props = new Properties();
         props.put(ConsumerConfig.GROUP_ID_CONFIG,KAFKA_EAGLE_SYSTEM_GROUP);
@@ -244,8 +201,6 @@ public class KafkaOffsetFetchDemo {
         }
         return endLogSize;
     }
-
-
 
 
     /*public static void main(String[] args) throws InstantiationException, IllegalAccessException {
