@@ -71,18 +71,34 @@ public class KafkaOffsetFetchDemo {
         KafkaOffsetFetchDemo kafkaOffsetFetchDemo = new KafkaOffsetFetchDemo();
         //kafkaOffsetFetchDemo.getKafkaOffSet(kafkaOffsetFetchDemo.KAFKA_TOPIC,kafkaOffsetFetchDemo.KAFKA_GROUP);
         try {
+/*
             kafkaOffsetFetchDemo.getAllTopicList("bingoyes");
 
             kafkaOffsetFetchDemo.getGroupsForTopic(KafkaOffsetFetchDemo.KAFKA_SERVER_URL,kafkaOffsetFetchDemo.KAFKA_TOPIC);
+*/
+            kafkaOffsetFetchDemo.letUsGo();
 
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
 
+    public  List<OffsetInfo> letUsGo() throws ExecutionException,InterruptedException{
+
+        List<OffsetInfo> resultList = new  ArrayList<OffsetInfo>();
+        List<String > topicList = getAllTopicList("bingoyes");
+        for(String topicName:topicList){
+            List<String> groupList = this.getGroupsForTopic(KAFKA_SERVER_URL,topicName);
+            for(String groupName:groupList){
+                List<OffsetInfo> list =  this.getKafkaOffSet(topicName,groupName);
+                resultList.addAll(list);
+            }
+        }
+
+        System.out.println("resultList:"+resultList);
+        return  resultList;
+    }
 
     public List<OffsetInfo> getKafkaOffSet(String topic,String group){
         Set<Integer> partitionids = this.getTopicPartitions(topic);
