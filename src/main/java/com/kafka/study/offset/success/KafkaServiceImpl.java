@@ -10,6 +10,7 @@ import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
 import org.apache.kafka.clients.admin.MemberDescription;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.zookeeper.data.Stat;
 import scala.Option;
 import scala.Tuple2;
@@ -20,7 +21,7 @@ import java.util.*;
 
 public class KafkaServiceImpl {
 
-    private final String KAFKA_SERVER_URL ="192.168.66.121:9092";
+    private final String KAFKA_SERVER_URL ="192.168.90.5:9092";
 
 
     private JSONArray getKafkaMetadata(String bootstrapServers, String group) {
@@ -34,6 +35,11 @@ public class KafkaServiceImpl {
             ssl(prop, clusterAlias);
         }*/
 
+        prop.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+        prop.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
+        prop.put("sasl.jaas.config",
+                "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" +
+                        "admin\" password=\"admin\";");
         JSONArray consumerGroups = new JSONArray();
         AdminClient adminClient = null;
         try {
