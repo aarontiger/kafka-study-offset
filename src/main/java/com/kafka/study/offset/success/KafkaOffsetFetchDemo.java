@@ -9,14 +9,13 @@ import com.kafka.study.offset.success.model.OffsetZkInfo;
 import org.I0Itec.zkclient.ZkClient;
 import org.I0Itec.zkclient.serialize.SerializableSerializer;
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsOptions;
-import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
+import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.SaslConfigs;
+import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -30,6 +29,9 @@ import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class KafkaOffsetFetchDemo {
 
@@ -67,10 +69,22 @@ public class KafkaOffsetFetchDemo {
 
     public static void main(String[] args){
         KafkaOffsetFetchDemo kafkaOffsetFetchDemo = new KafkaOffsetFetchDemo();
-        kafkaOffsetFetchDemo.getKafkaOffSet(kafkaOffsetFetchDemo.KAFKA_TOPIC,kafkaOffsetFetchDemo.KAFKA_GROUP);
+        //kafkaOffsetFetchDemo.getKafkaOffSet(kafkaOffsetFetchDemo.KAFKA_TOPIC,kafkaOffsetFetchDemo.KAFKA_GROUP);
+        try {
+            kafkaOffsetFetchDemo.getAllTopicList("bingoyes");
+
+            kafkaOffsetFetchDemo.getGroupsForTopic(KafkaOffsetFetchDemo.KAFKA_SERVER_URL,kafkaOffsetFetchDemo.KAFKA_TOPIC);
+
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
-    public void getKafkaOffSet(String topic,String group){
+
+
+    public List<OffsetInfo> getKafkaOffSet(String topic,String group){
         Set<Integer> partitionids = this.getTopicPartitions(topic);
 
      /*   AdminClient adminClient = null;
@@ -82,7 +96,7 @@ public class KafkaOffsetFetchDemo {
         prop.put("sasl.jaas.config",
                 "org.apache.kafka.common.security.plain.PlainLoginModule required username=\"" +
                         "admin\" password=\"admin\";");*/
-
+        List<OffsetInfo> resultOffsetList = new ArrayList<OffsetInfo>();
         try {
             //adminClient = AdminClient.create(prop);
             List<TopicPartition> tps = new ArrayList<>();
@@ -106,7 +120,7 @@ public class KafkaOffsetFetchDemo {
             System.out.println("partitionOffeset:"+partitionOffset);
 
             Map<TopicPartition, Long> tps2 = getKafkaLogSize(KAFKA_SERVER_URL, topic, partitionids);
-            List<OffsetInfo> resultOffsetList = new ArrayList<OffsetInfo>();
+
             if (tps != null && partitionOffset != null) {
                 for (Map.Entry<TopicPartition, Long> entrySet : tps2.entrySet()) {
                     OffsetInfo offsetInfo = new OffsetInfo();
@@ -123,12 +137,12 @@ public class KafkaOffsetFetchDemo {
                 }
             }
             System.out.println("result offset list:"+resultOffsetList);
-            //return targets;
 
 
         }catch (Exception e){
             e.printStackTrace();
         }
+        return resultOffsetList;
     }
 
     /**
@@ -202,6 +216,63 @@ public class KafkaOffsetFetchDemo {
         return endLogSize;
     }
 
+    /**
+     * 获得一个topic的consumer group
+     * @param brokerServers
+     * @param topic
+     * @return
+     * @throws ExecutionException
+     * @throws InterruptedException
+     * @throws TimeoutException
+     */
+    public  List<String> getGroupsForTopic(String brokerServers, String topic)
+            throws ExecutionException, InterruptedException, TimeoutException {
+
+        final List<String> filteredGroups = new ArrayList<>();
+        try {
+            List<String> allGroups = adminClient.listConsumerGroups()
+                    .valid()
+                    .get(10, TimeUnit.SECONDS)
+                    .stream()
+                    .map(ConsumerGroupListing::groupId)
+                    .collect(Collectors.toList());
+
+            Map<String, ConsumerGroupDescription> allGroupDetails =
+                    adminClient.describeConsumerGroups(allGroups).all().get(10, TimeUnit.SECONDS);
+
+
+            allGroupDetails.entrySet().forEach(entry -> {
+                String groupId = entry.getKey();
+                ConsumerGroupDescription description = entry.getValue();
+                boolean topicSubscribed = description.members().stream().map(MemberDescription::assignment)
+                        .map(MemberAssignment::topicPartitions)
+                        .map(tps -> tps.stream().map(TopicPartition::topic).collect(Collectors.toSet()))
+                        .anyMatch(tps -> tps.contains(topic));
+                if (topicSubscribed)
+                    filteredGroups.add(groupId);
+            });
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        return filteredGroups;
+    }
+
+    public List<String> getAllTopicList(String topicPrefix){
+
+        List<String>  topicList = new ArrayList<String>();
+        try {
+            ListTopicsResult result = adminClient.listTopics();
+            for(String name:result.names().get()){
+                topicList.add(name);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+        return topicList;
+    }
 
     /*public static void main(String[] args) throws InstantiationException, IllegalAccessException {
         Properties props = new Properties();

@@ -4,11 +4,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.kafka.clients.CommonClientConfigs;
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.DescribeConsumerGroupsResult;
-import org.apache.kafka.clients.admin.ListConsumerGroupOffsetsResult;
-import org.apache.kafka.clients.admin.MemberDescription;
+import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.zookeeper.data.Stat;
@@ -18,6 +16,7 @@ import scala.collection.JavaConversions;
 import scala.collection.Seq;
 
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 
 public class KafkaServiceImpl {
 
@@ -105,6 +104,27 @@ public class KafkaServiceImpl {
 
     public String getKafkaConsumerGroupTopic( String group) {
         return getKafkaMetadata(KafkaOffsetFetchDemo.KAFKA_SERVER_URL, group).toJSONString();
+    }
+
+    public  ArrayList<String> getAllGroupList(){
+
+        ArrayList<String> retGroupList = new ArrayList<String>();
+        ListConsumerGroupsResult result = adminClient.listConsumerGroups();
+        KafkaFuture<Collection<ConsumerGroupListing>> future = result.all();
+
+        try {
+            Collection<ConsumerGroupListing> groupList =future.get();
+
+            for(ConsumerGroupListing group:groupList){
+                retGroupList.add(group.groupId());
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+
+        return retGroupList;
     }
 
    /* private String parseBrokerServer(String clusterAlias) {
