@@ -1,19 +1,14 @@
-package com.kafka.study.offset.success;
+package com.kafka.study.offset.success.apidemo;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.kafka.study.offset.success.apidemo.KafkaOffsetFetchDemo;
 import org.apache.kafka.clients.CommonClientConfigs;
 import org.apache.kafka.clients.admin.*;
 import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 import org.apache.kafka.common.KafkaFuture;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.SaslConfigs;
-import org.apache.zookeeper.data.Stat;
-import scala.Option;
-import scala.Tuple2;
-import scala.collection.JavaConversions;
-import scala.collection.Seq;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;

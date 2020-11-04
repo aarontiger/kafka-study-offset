@@ -1,9 +1,8 @@
-package com.kafka.study.offset.success;
+package com.kafka.study.offset.success.apidemo;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.kafka.study.offset.test.zkapi.MyZkWatcher;
 import com.kafka.study.offset.success.model.OffsetInfo;
 import com.kafka.study.offset.success.model.OffsetZkInfo;
 import org.I0Itec.zkclient.ZkClient;
@@ -17,18 +16,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.errors.TimeoutException;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
-import org.apache.zookeeper.data.ACL;
-import org.apache.zookeeper.data.Id;
-import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;

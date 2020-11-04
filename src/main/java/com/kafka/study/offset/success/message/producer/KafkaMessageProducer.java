@@ -1,4 +1,4 @@
-package com.kafka.study.offset.success.message;
+package com.kafka.study.offset.success.message.producer;
 
 import java.util.Properties;
 
