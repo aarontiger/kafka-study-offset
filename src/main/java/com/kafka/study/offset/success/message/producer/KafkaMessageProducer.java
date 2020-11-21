@@ -12,7 +12,8 @@ public class KafkaMessageProducer {
 
     public static void main(String[] args) {
         Properties props = new Properties();
-        props.put("bootstrap.servers", "103.231.146.62:39092");
+        //props.put("bootstrap.servers", "103.231.146.62:39092");
+        props.put("bootstrap.servers", "127.0.0.1:9092");
         props.put("acks", "all");
         props.put("retries", 0);
         props.put("batch.size", 16384);
@@ -21,11 +22,11 @@ public class KafkaMessageProducer {
         props.put("buffer.memory", 33554432);
         props.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
         props.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
+/*        props.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, "SASL_PLAINTEXT");
         props.put(SaslConfigs.SASL_MECHANISM, "PLAIN");
         props.put("sasl.jaas.config",
                 "org.apache.kafka.common.security.plain.PlainLoginModule required username=\""
-                        + "admin" + "\" password=\"" + "admin" + "\";");
+                        + "admin" + "\" password=\"" + "admin" + "\";");*/
 
         Producer<String, String> producer = new KafkaProducer<>(props);
         for (int i = 0; i < 200; i++)
