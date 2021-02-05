@@ -20,8 +20,10 @@ public class KafkaMessageTotal {
     public static void main(String[] args) {
         Properties props = new Properties();
         //props.put("bootstrap.servers", "103.231.146.62:19092");
-        props.put("bootstrap.servers", "192.168.90.5:9092");
-        props.put("group.id", "report-obuid");
+        props.put("bootstrap.servers", "192.168.90.7:9092");
+        //props.put("auto.offset.reset", "earliest");
+
+        props.put("group.id", "flink-graph-maca1");
         props.put("enable.auto.commit", "false");
         props.put("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         props.put("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
